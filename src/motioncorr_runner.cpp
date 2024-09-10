@@ -1431,6 +1431,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 	if (do_local) {
 		const int patch_nx = nx / patch_x, patch_ny = ny / patch_y, n_patches = patch_x * patch_y;
 		std::vector<RFLOAT> patch_xshifts, patch_yshifts, patch_frames, patch_xs, patch_ys;
+		std::vector<RFLOAT> frame_xshifts, frame_yshifts, frame_frames, frame_xs, frame_ys;
 		std::vector<MultidimArray<fComplex> > Fpatches(n_groups);
 
 		int ipatch = 1;
@@ -1514,7 +1515,6 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 		Fpatches.clear();
 
                 // Loop over frames to check motions are within two standard deviations
-		str::vector<RFLOAT> frame_xshifts, frame_yshifts, frame_frames, frame_xs, frame_ys;
 		for (int igroup = 0; igroup < n_groups; igroup++) {
 			double frame_mean = 0;
 			double frame_meansq = 0;
