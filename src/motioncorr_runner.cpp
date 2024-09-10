@@ -1482,7 +1482,6 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 				RCTIC(TIMING_PATCH_ALIGN);
 				bool converged = alignPatch(Fpatches, x_end - x_start, y_end - y_start, bfactor / (prescaling * prescaling), local_xshifts, local_yshifts, logfile);
 				RCTOC(TIMING_PATCH_ALIGN);
-				if (!converged) continue;
 
 				std::vector<RFLOAT> interpolated_xshifts(n_frames), interpolated_yshifts(n_frames);
 				interpolateShifts(group_start, group_size, local_xshifts, local_yshifts, n_frames, interpolated_xshifts, interpolated_yshifts);
@@ -1514,10 +1513,36 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 		}
 		Fpatches.clear();
 
+                // Loop over frames to check motions are within two standard deviations
+		str::vector<RFLOAT> frame_xshifts, frame_yshifts, frame_frames, frame_xs, frame_ys;
+		for (int igroup = 0; igroup < n_groups; igroup++) {
+			double frame_mean = 0;
+			double frame_meansq = 0;
+			for (int iframe = 0; iframe < patch_x * patch_y; iframe++) {
+				int patch_loc = igroup + iframe * patch_x * patch_y;
+				double frame_dist = sqrt(patch_xshifts[patch_loc] * patch_xshifts[patch_loc] + patch_yshifts[patch_loc] * patch_yshifts[patch_loc]);
+				frame_mean += frame_dist / patch_x / patch_y;
+				frame_meansq += frame_dist * frame_dist / patch_x / patch_y;
+			}
+			double frame_std = sqrt(frame_meansq - frame_mean * frame_mean);
+			for (int iframe = 0; iframe < patch_x * patch_y; iframe++) {
+				int patch_loc = igroup + iframe * patch_x * patch_y;
+                                double frame_dist = sqrt(patch_xshifts[patch_loc] * patch_xshifts[patch_loc] + patch_yshifts[patch_loc] * patch_yshifts[patch_loc]);
+				if (frame_dist > frame_mean - 2 * frame_std && frame_dist < frame_mean + 2 * frame_std) {
+					frame_xshifts.push_back(patch_xshifts[patch_loc]);
+					frame_yshifts.push_back(patch_yshifts[patch_loc]);
+					frame_frames.push_back(patch_frames[patch_loc]);
+					frame_xs.push_back(patch_xs[patch_loc]);
+					frame_ys.push_back(patch_ys[patch_loc]);
+				}
+			}
+		}
+
+
 		// Fit polynomial model
 
 		RCTIC(TIMING_FIT_POLYNOMIAL);
-		const int n_obs = patch_frames.size();
+		const int n_obs = frame_frames.size();
 		const int n_params = 18;
 
 		if (n_obs <= n_params) {
@@ -1529,11 +1554,11 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 		Matrix2D <RFLOAT> matA(n_obs, n_params);
 		Matrix1D <RFLOAT> vecX(n_obs), vecY(n_obs), coeffX(n_params), coeffY(n_params);
 		for (int i = 0; i < n_obs; i++) {
-			VEC_ELEM(vecX, i) = patch_xshifts[i]; VEC_ELEM(vecY, i) = patch_yshifts[i];
+			VEC_ELEM(vecX, i) = frame_xshifts[i]; VEC_ELEM(vecY, i) = frame_yshifts[i];
 
-			const RFLOAT x = patch_xs[i] / nx - 0.5;
-			const RFLOAT y = patch_ys[i] / ny - 0.5;
-			const RFLOAT z = patch_frames[i];
+			const RFLOAT x = frame_xs[i] / nx - 0.5;
+			const RFLOAT y = frame_ys[i] / ny - 0.5;
+			const RFLOAT z = frame_frames[i];
 			const RFLOAT x2 = x * x, y2 = y * y, xy = x * y, z2 = z * z;
 			const RFLOAT z3 = z2 * z;
 
@@ -1583,27 +1608,27 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 		RFLOAT rms_x = 0, rms_y = 0;
 	        for (int i = 0; i < n_obs; i++) {
 			RFLOAT x_fitted, y_fitted;
-			const RFLOAT x = patch_xs[i] / nx - 0.5;
-			const RFLOAT y = patch_ys[i] / ny - 0.5;
-			const RFLOAT z = patch_frames[i];
+			const RFLOAT x = frame_xs[i] / nx - 0.5;
+			const RFLOAT y = frame_ys[i] / ny - 0.5;
+			const RFLOAT z = frame_frames[i];
 
 			model->getShiftAt(z, x, y, x_fitted, y_fitted);
-			rms_x += (patch_xshifts[i] - x_fitted) * (patch_xshifts[i] - x_fitted);
-			rms_y += (patch_yshifts[i] - y_fitted) * (patch_yshifts[i] - y_fitted);
+			rms_x += (frame_xshifts[i] - x_fitted) * (frame_xshifts[i] - x_fitted);
+			rms_y += (frame_yshifts[i] - y_fitted) * (frame_yshifts[i] - y_fitted);
 
 			// These shifts and RMSDs are for reporting, so should be in the original pixel size
-			mic.patchX.push_back(patch_xs[i] * prescaling);
-			mic.patchY.push_back(patch_ys[i] * prescaling);
+			mic.patchX.push_back(frame_xs[i] * prescaling);
+			mic.patchY.push_back(frame_ys[i] * prescaling);
 			mic.patchZ.push_back(z + first_frame_sum); // 1-indexed
-			mic.localShiftX.push_back(patch_xshifts[i] * prescaling);
-			mic.localShiftY.push_back(patch_yshifts[i] * prescaling);
+			mic.localShiftX.push_back(frame_xshifts[i] * prescaling);
+			mic.localShiftY.push_back(frame_yshifts[i] * prescaling);
 			mic.localFitX.push_back(x_fitted * prescaling);
 			mic.localFitY.push_back(y_fitted * prescaling);
 
 #ifdef DEBUG_OWN
 			std::cout << " x = " << x << " y = " << y << " z = " << z;
-			std::cout << ", Xobs = " << patch_xshifts[i] * prescaling << " Xfit = " << x_fitted * prescaling;
-			std::cout << ", Yobs = " << patch_yshifts[i] * prescaling << " Yfit = " << y_fitted * prescaling << std::endl;
+			std::cout << ", Xobs = " << frame_xshifts[i] * prescaling << " Xfit = " << x_fitted * prescaling;
+			std::cout << ", Yobs = " << frame_yshifts[i] * prescaling << " Yfit = " << y_fitted * prescaling << std::endl;
 #endif
 		}
 		rms_x = std::sqrt(rms_x / n_obs) * prescaling; rms_y = std::sqrt(rms_y / n_obs) * prescaling;
