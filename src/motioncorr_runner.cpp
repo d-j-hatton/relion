@@ -1519,14 +1519,14 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 			double frame_mean = 0;
 			double frame_meansq = 0;
 			for (int iframe = 0; iframe < patch_x * patch_y; iframe++) {
-				int patch_loc = igroup + iframe * patch_x * patch_y;
+				int patch_loc = igroup + iframe * n_groups;
 				double frame_dist = sqrt(patch_xshifts[patch_loc] * patch_xshifts[patch_loc] + patch_yshifts[patch_loc] * patch_yshifts[patch_loc]);
 				frame_mean += frame_dist / patch_x / patch_y;
 				frame_meansq += frame_dist * frame_dist / patch_x / patch_y;
 			}
 			double frame_std = sqrt(frame_meansq - frame_mean * frame_mean);
 			for (int iframe = 0; iframe < patch_x * patch_y; iframe++) {
-				int patch_loc = igroup + iframe * patch_x * patch_y;
+				int patch_loc = igroup + iframe * n_groups;
                                 double frame_dist = sqrt(patch_xshifts[patch_loc] * patch_xshifts[patch_loc] + patch_yshifts[patch_loc] * patch_yshifts[patch_loc]);
 				if (frame_dist > frame_mean - 2 * frame_std && frame_dist < frame_mean + 2 * frame_std) {
 					frame_xshifts.push_back(patch_xshifts[patch_loc]);
