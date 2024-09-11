@@ -98,6 +98,11 @@ option(DoublePrec_CPU "DoublePrec_CPU" ON)
 option(DoublePrec_ACC "Accelerated Code use double-precision" OFF)
 option(MKLFFT "Use MKL rather than FFTW for FFT" OFF)
 option(CudaTexture "CudaTexture" ON)
+option(RelionDebug "RelionDebug" OFF)
+
+if (RelionDebug)
+    add_definitions(-DDEBUG -DDEBUG_OWN)
+endif()
 
 if(ALTCPU)
     message(STATUS "ALTCPU enabled - Building CPU-accelerated version of RELION")
