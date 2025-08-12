@@ -17,12 +17,11 @@
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
  ***************************************************************************/
-#include <src/motioncorr_own_devolved.h>
+#include <src/motioncorr_own_devolved_mpi.h>
 
-
-int main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
-	MotioncorrOwnDevolved prm;
+	MotioncorrOwnDevolvedMpi prm;
 
 	try
 	{
@@ -33,8 +32,9 @@ int main(int argc, char *argv[])
 	catch (RelionError XE)
 	{
 		std::cerr << XE;
-		return RELION_EXIT_FAILURE;
+		MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_FAILURE);
 	}
 
+	MPI_Barrier(MPI_COMM_WORLD);
 	return RELION_EXIT_SUCCESS;
 }
