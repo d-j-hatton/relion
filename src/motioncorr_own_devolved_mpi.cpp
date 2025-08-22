@@ -89,6 +89,6 @@ void MotioncorrOwnDevolvedMpi::run()
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Only the leader writes the joined result file
-    if (node->isLeader() && !fromStarFile)
+    if (node->isLeader())
         generateLogFilePDFAndWriteStarFiles();
 }
