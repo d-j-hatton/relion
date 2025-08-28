@@ -27,9 +27,6 @@ class MotioncorrOwnDevolvedMpi: public MotioncorrRunnerMpi
 {
 
 public:
-    /** Read
-     * This could take care of mpi-parallelisation-dependent variables
-     */
 
     void addClArgs() override;
 
