@@ -82,7 +82,7 @@ void MotioncorrOwnDevolvedMpi::run()
         bool result;
         result = executeOwnMotionCorrection(mic, fromStarFile);
 
-        if (result && !fromStarFile)
+        if (result)
 			saveModel(mic);
 	}
 
