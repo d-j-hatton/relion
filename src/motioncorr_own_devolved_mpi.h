@@ -17,24 +17,28 @@
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
  ***************************************************************************/
-#include <src/motioncorr_own_devolved.h>
 
+#ifndef MOTIONCORR_OWN_DEVOLVED_MPI_H_
+#define MOTIONCORR_OWN_DEVOLVED_MPI_H_
 
-int main(int argc, char *argv[])
+#include "src/motioncorr_runner_mpi.h"
+
+class MotioncorrOwnDevolvedMpi: public MotioncorrRunnerMpi
 {
-	MotioncorrOwnDevolved prm;
 
-	try
-	{
-		prm.read(argc, argv);
-		prm.initialise();
-		prm.run();
-	}
-	catch (RelionError XE)
-	{
-		std::cerr << XE;
-		return RELION_EXIT_FAILURE;
-	}
+public:
 
-	return RELION_EXIT_SUCCESS;
-}
+    void addClArgs() override;
+
+    // Parallelized run function
+    void run();
+
+    FileName movie_path;
+    FileName micrograph_path;
+    FileName motion_correction_star_path;
+
+    // Filenames of the .STAR files containing pre-calculated shifts
+    std::vector<FileName> fn_stars_all;
+};
+
+#endif /* MOTIONCORR_RUNNER_MPI_H_ */

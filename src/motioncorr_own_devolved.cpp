@@ -46,7 +46,7 @@ void MotioncorrOwnDevolved::run()
 	}
 	bool result;
 	result = executeOwnMotionCorrection(mic, fromStarFile);
-	if (result && !fromStarFile) saveModel(mic);
+	if (result) saveModel(mic);
 }
 
 FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)
