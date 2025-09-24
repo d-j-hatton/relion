@@ -28,7 +28,7 @@ void MotioncorrOwnDevolved::addClArgs()
 {
 	int path_section =  parser.addSection("In/out paths options");
 	movie_path = parser.getOption("--in_movie", "Path to input movie");
-	micrograph_path = parser.getOption("--out_mic", "Output micrograph path");
+	// micrograph_path = parser.getOption("--out_mic", "Output micrograph path");
 	motion_correction_star_path = parser.getOption("--mc_star", "Path to star file containing motion correction model information from a previous run", "");
 	MotioncorrRunner::addClArgs();
 }
@@ -49,7 +49,7 @@ void MotioncorrOwnDevolved::run()
 	if (result) saveModel(mic);
 }
 
-FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)
-{
-	return micrograph_path;
-}
+// FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)
+// {
+// 	return fn_out;
+// }
