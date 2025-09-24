@@ -49,7 +49,26 @@ void MotioncorrOwnDevolved::run()
 	if (result) saveModel(mic);
 }
 
-// FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)
-// {
-// 	return fn_out;
-// }
+FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)
+{
+	// If there are any dots in the filename, replace them by underscores
+	FileName fn_root = fn_mic.getBaseName();
+	fn_root = fn_root.withoutExtension();
+
+	size_t pos = 0;
+	while (true)
+	{
+		pos = fn_root.find(".");
+		if (pos == std::string::npos)
+			break;
+		fn_root.replace(pos, 1, "_");
+	}
+	if (continue_even_odd)
+	{
+		return fn_out + fn_root + "_EVN.mrc";
+	}
+	else
+	{
+	return fn_out + fn_root + ".mrc";
+	}
+}
