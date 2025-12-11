@@ -28,7 +28,7 @@ void MotioncorrOwnDevolved::addClArgs()
 {
 	int path_section =  parser.addSection("In/out paths options");
 	movie_path = parser.getOption("--in_movie", "Path to input movie");
-	micrograph_path = parser.getOption("--out_mic", "Output micrograph path");
+	micrograph_path = parser.getOption("--out_mic", "Output micrograph path","");
 	motion_correction_star_path = parser.getOption("--mc_star", "Path to star file containing motion correction model information from a previous run", "");
 	MotioncorrRunner::addClArgs();
 }
@@ -51,5 +51,29 @@ void MotioncorrOwnDevolved::run()
 
 FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)
 {
-	return micrograph_path;
+	if (micrograph_path != "") {
+		return micrograph_path;
+	} else 
+	{
+		// If there are any dots in the filename, replace them by underscores
+		FileName fn_root = fn_mic.getBaseName();
+		fn_root = fn_root.withoutExtension();
+
+		size_t pos = 0;
+		while (true)
+		{
+			pos = fn_root.find(".");
+			if (pos == std::string::npos)
+				break;
+			fn_root.replace(pos, 1, "_");
+		}
+		if (continue_even_odd)
+		{
+			return fn_out + fn_root + "_EVN.mrc";
+		}
+		else
+		{
+		return fn_out + fn_root + ".mrc";
+		}
+	}
 }
