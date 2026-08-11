@@ -50,7 +50,24 @@ void MotioncorrOwnDevolved::run()
 
 	bool result;
 	result = executeOwnMotionCorrection(mic, fromStarFile);
-	if (result) saveModel(mic);
+
+	if (result)
+	{
+		if (fromStarFile)
+		{
+			// The --mc_star route only regenerates the corrected micrograph from the
+			// metadata of a previous run, so that metadata is an input: leave the
+			// input STAR file untouched. Re-writing it would lose data_local_shift,
+			// which Micrograph::write() emits but Micrograph::read() does not parse.
+			std::cerr << " WARNING: no metadata STAR file is written on the --mc_star route."
+			          << " The input " << motion_correction_star_path << " is kept unchanged"
+			          << " and still describes this micrograph. If --o points elsewhere, that"
+			          << " output directory will hold the corrected micrograph but no STAR file."
+			          << std::endl;
+		}
+		else
+			saveModel(mic);
+	}
 }
 
 FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)

@@ -54,6 +54,9 @@ void MotioncorrOwnDevolvedMpi::run()
 	divide_equally(fn_micrographs.size(), node->size, node->rank, my_first_micrograph, my_last_micrograph);
 	my_nr_micrographs = my_last_micrograph - my_first_micrograph + 1;
 
+    // Only warn once about the metadata STAR files not being re-written
+    bool warned_no_star = false;
+
     for (long int imic = my_first_micrograph; imic <= my_last_micrograph; imic++)
 	{
         // Abort through the pipeline_control system
@@ -83,7 +86,27 @@ void MotioncorrOwnDevolvedMpi::run()
         result = executeOwnMotionCorrection(mic, fromStarFile);
 
         if (result)
-			saveModel(mic);
+        {
+            if (fromStarFile)
+            {
+                // The --mc_star route only regenerates the corrected micrograph from the
+                // metadata of a previous run, so that metadata is an input: leave the
+                // input STAR files untouched. Re-writing them would lose data_local_shift,
+                // which Micrograph::write() emits but Micrograph::read() does not parse.
+                if (!warned_no_star && node->isLeader())
+                {
+                    std::cerr << " WARNING: no metadata STAR files are written on the --mc_star"
+                              << " route. The input STAR files are kept unchanged and still"
+                              << " describe these micrographs. If --o points to a different"
+                              << " directory, the rlnMicrographMetadata entries of the joint"
+                              << " output STAR file will refer to files that are not there, and"
+                              << " the accumulated-motion columns will be left out." << std::endl;
+                    warned_no_star = true;
+                }
+            }
+            else
+                saveModel(mic);
+        }
 	}
 
     MPI_Barrier(MPI_COMM_WORLD);
