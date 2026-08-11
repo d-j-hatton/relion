@@ -44,6 +44,10 @@ void MotioncorrOwnDevolved::run()
 		mic = mic2;
 		fromStarFile = true;
 	}
+
+	// Set pre_exposure after the --mc_star branch, or it would be overwritten
+	mic.pre_exposure = pre_exposure;
+
 	bool result;
 	result = executeOwnMotionCorrection(mic, fromStarFile);
 	if (result) saveModel(mic);
