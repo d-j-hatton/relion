@@ -33,6 +33,23 @@ void MotioncorrOwnDevolved::addClArgs()
 	MotioncorrRunner::addClArgs();
 }
 
+void MotioncorrOwnDevolved::initialise()
+{
+	// Most of MotioncorrRunner::initialise() parses the input micrograph STAR file,
+	// which this single-movie app does not have. Only redo the output path set-up,
+	// which run() and prepareGainReference() both rely on.
+
+	// Make sure fn_out ends with a slash
+	if (fn_out.length() > 0 && fn_out[fn_out.length() - 1] != '/')
+		fn_out += "/";
+
+	// Make the output directory if necessary. Go through getOutputFileNames() so
+	// that --out_mic is honoured as well as --o.
+	FileName fn_avg = getOutputFileNames(movie_path);
+	if (fn_avg.contains("/"))
+		mktree(fn_avg.beforeLastOf("/"));
+}
+
 void MotioncorrOwnDevolved::run()
 {
 	prepareGainReference(1);
@@ -44,9 +61,30 @@ void MotioncorrOwnDevolved::run()
 		mic = mic2;
 		fromStarFile = true;
 	}
+
+	// Set pre_exposure after the --mc_star branch, or it would be overwritten
+	mic.pre_exposure = pre_exposure;
+
 	bool result;
 	result = executeOwnMotionCorrection(mic, fromStarFile);
-	if (result) saveModel(mic);
+
+	if (result)
+	{
+		if (fromStarFile)
+		{
+			// The --mc_star route only regenerates the corrected micrograph from the
+			// metadata of a previous run, so that metadata is an input: leave the
+			// input STAR file untouched. Re-writing it would lose data_local_shift,
+			// which Micrograph::write() emits but Micrograph::read() does not parse.
+			std::cerr << " WARNING: no metadata STAR file is written on the --mc_star route."
+			          << " The input " << motion_correction_star_path << " is kept unchanged"
+			          << " and still describes this micrograph. If --o points elsewhere, that"
+			          << " output directory will hold the corrected micrograph but no STAR file."
+			          << std::endl;
+		}
+		else
+			saveModel(mic);
+	}
 }
 
 FileName MotioncorrOwnDevolved::getOutputFileNames(FileName fn_mic, bool continue_even_odd)

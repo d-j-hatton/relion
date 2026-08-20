@@ -1552,11 +1552,21 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic, bool fromStar
 	Iref().initZeros();
 
 	RCTIC(TIMING_GLOBAL_IFFT);
-	#pragma omp parallel for num_threads(n_threads)
-	for (int iframe = 0; iframe < n_frames; iframe++) {
-		Iframes[iframe]().reshape(ny, nx);
-		NewFFT::inverseFourierTransform(Fframes[iframe], Iframes[iframe]());
-		// Unfortunately, we cannot deallocate Fframes here because of dose-weighting
+	// Skip this intermediate IFFT when its output will not be used:
+	// - fromStarFile=true means patch-based alignment is skipped (Iframes not needed for that)
+	// - if dose weighting is enabled and non-DW output is not requested, these real-space
+	//   frames would be immediately overwritten by the dose-weighted IFFT below.
+	if (!fromStarFile || !do_dose_weighting || save_noDW) {
+		#pragma omp parallel for num_threads(n_threads)
+		for (int iframe = 0; iframe < n_frames; iframe++) {
+			Iframes[iframe]().reshape(ny, nx);
+			NewFFT::inverseFourierTransform(Fframes[iframe], Iframes[iframe]());
+			// Unfortunately, we cannot deallocate Fframes here because of dose-weighting
+		}
+	} else {
+		// Resize Iframes so the dose-weighted IFFT below can write into them
+		for (int iframe = 0; iframe < n_frames; iframe++)
+			Iframes[iframe]().reshape(ny, nx);
 	}
 	RCTOC(TIMING_GLOBAL_IFFT);
 

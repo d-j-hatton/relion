@@ -69,7 +69,7 @@ void MotioncorrRunnerMpi::run()
 
 		Micrograph mic(fn_micrographs[imic], fn_gain_reference, bin_factor, eer_upsampling, eer_grouping);
         
-		if (pre_exposure_micrographs.size() == imic)
+		if (imic < (long int)pre_exposure_micrographs.size())
 			mic.pre_exposure = pre_exposure + pre_exposure_micrographs[imic];
 		else
     		mic.pre_exposure = pre_exposure;
